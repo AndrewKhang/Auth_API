@@ -33,3 +33,11 @@ def verify_token(token: str) -> str:
         raise HTTPException(status_code=401, detail="Token expired!")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token!")
+
+def create_refresh_token(username: str) -> str:
+    
+    payload = {
+        "sub": username,
+        "exp": datetime.utcnow() + timedelta(days=7)
+    }
+    return jwt.encode(payload, os.getenv("SECRET_KEY"), algorithm="HS256")

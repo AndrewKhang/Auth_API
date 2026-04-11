@@ -30,6 +30,16 @@ def init_db():
             )
         """)
         print("Table ready!")
+        cursor.execute(""" 
+        CREATE TABLE IF NOT EXISTS refresh_tokens (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    user_id INT NOT NULL,
+    token VARCHAR(255) NOT NULL,
+    expires_at DATETIME NOT NULL,
+    FOREIGN KEY (user_id) REFERENCES users(id)
+     )
+     """)
+        print("Refresh token table ready!")
         db.commit()
         print("Database ready!")
     finally:
@@ -68,4 +78,50 @@ def get_user(username: str):
      raise
     finally:
         cursor.close() 
+        db.close()
+
+def save_refresh_token(user_id: int, token: str, expires_at):
+    db = get_connection()  
+    cursor = db.cursor(dictionary=True)
+    try:
+        cursor.execute(
+            "INSERT INTO refresh_tokens (user_id, token, expires_at ) VALUES (%s, %s, %s)",
+            (user_id, token, expires_at )
+        )
+        db.commit()
+    except Exception as e:
+        print(f"[ERROR] save_refresh_token() failed: {str(e)}")
+        raise
+    finally:
+        cursor.close()
+        db.close()
+
+def get_refresh_token(token: str):
+    db = get_connection()  
+    cursor = db.cursor(dictionary=True)
+    try:
+       cursor.execute("SELECT * FROM refresh_tokens WHERE token = %s", (token,)) 
+       result = cursor.fetchone()  
+       if not result:
+         return None
+       else:
+             return result
+    except Exception as e:
+     print(f"[ERROR] get_refresh_token() failed: {str(e)}")
+     raise
+    finally:
+        cursor.close() 
+        db.close()
+        
+def delete_refresh_tokens(user_id: int):
+    db = get_connection()
+    cursor = db.cursor()
+    try:
+        cursor.execute("DELETE FROM refresh_tokens WHERE user_id = %s", (user_id,))
+        db.commit()
+    except Exception as e:
+        print(f"[ERROR] delete_refresh_tokens() failed: {str(e)}")
+        raise
+    finally:
+        cursor.close()
         db.close()
