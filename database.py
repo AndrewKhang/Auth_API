@@ -1,127 +1,126 @@
-import mysql.connector
-import os
-from dotenv import load_dotenv
 
-load_dotenv()
+from models import Base, engine, Session, User, RefreshToken, Contact
 
-# 1. Connet database
-def get_connection(use_db=True):
-    config = {
-        "host": os.getenv("DB_HOST"),
-        "user": os.getenv("DB_USER"),
-        "password": os.getenv("DB_PASSWORD")
-    }   
-    if use_db:
-        config["database"] = os.getenv("DB_NAME")
-    return mysql.connector.connect(**config)
 
-# 2. create database, table
+
+# create database, table
 def init_db():
-    db = get_connection(use_db=False)  # chưa có database nên False
-    cursor = db.cursor()
-    try:
-        cursor.execute("CREATE DATABASE IF NOT EXISTS auth_db")
-        cursor.execute("USE auth_db")
-        cursor.execute("""
-            CREATE TABLE IF NOT EXISTS users (
-                id INT AUTO_INCREMENT PRIMARY KEY,
-                username VARCHAR(50) UNIQUE NOT NULL,
-                password VARCHAR(255) NOT NULL
-            )
-        """)
-        print("Table ready!")
-        cursor.execute(""" 
-        CREATE TABLE IF NOT EXISTS refresh_tokens (
-    id INT AUTO_INCREMENT PRIMARY KEY,
-    user_id INT NOT NULL,
-    token VARCHAR(255) NOT NULL,
-    expires_at DATETIME NOT NULL,
-    FOREIGN KEY (user_id) REFERENCES users(id)
-     )
-     """)
-        print("Refresh token table ready!")
-        db.commit()
-        print("Database ready!")
-    finally:
-        cursor.close()
-        db.close()
+    Base.metadata.create_all(engine)
 
-# 3. insert user
+# insert user
 def create_user(username: str, hashed_password: str):
-    db = get_connection()  
-    cursor = db.cursor()
+    session = Session()
     try:
-        cursor.execute(
-            "INSERT INTO users (username, password) VALUES (%s, %s)",
-            (username, hashed_password)
-        )
-        db.commit()
-    except Exception as e:
-        print(f"[ERROR] create_user() failed: {str(e)}")
+        user = User(username=username,password=hashed_password)
+        session.add(user)
+        session.commit()
+    except:
+        session.rollback()
         raise
     finally:
-        cursor.close()
-        db.close()
+        session.close()
+
+    
         
 def get_user(username: str):
-    db = get_connection()  
-    cursor = db.cursor(dictionary=True)
-    try:
-       cursor.execute("SELECT * FROM users WHERE username = %s", (username,)) 
-       result = cursor.fetchone()  
+    session = Session()
+    try: 
+       result = session.query(User).filter(User.username == username).first()
        if not result:
          return None
        else:
              return result
-    except Exception as e:
-     print(f"[ERROR] get_user() failed: {str(e)}")
-     raise
+    except:
+        session.rollback()
+        raise
     finally:
-        cursor.close() 
-        db.close()
+        session.close()
 
 def save_refresh_token(user_id: int, token: str, expires_at):
-    db = get_connection()  
-    cursor = db.cursor(dictionary=True)
+    session = Session()
     try:
-        cursor.execute(
-            "INSERT INTO refresh_tokens (user_id, token, expires_at ) VALUES (%s, %s, %s)",
-            (user_id, token, expires_at )
-        )
-        db.commit()
-    except Exception as e:
-        print(f"[ERROR] save_refresh_token() failed: {str(e)}")
+        token = RefreshToken(user_id=user_id, token=token, expires_at=expires_at)
+        session.add(token)
+        session.commit()
+    except:
+        session.rollback()
         raise
     finally:
-        cursor.close()
-        db.close()
+        session.close()
 
 def get_refresh_token(token: str):
-    db = get_connection()  
-    cursor = db.cursor(dictionary=True)
+    session = Session()
+    try: 
+       result = session.query(RefreshToken).filter(RefreshToken.token == token).first()
+       if not result:
+         return None
+       else:
+         return result
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+
+        
+def delete_refresh_tokens(user_id: int):
+    session = Session()
+    try: 
+     session.query(RefreshToken).filter(RefreshToken.user_id == user_id).delete()
+     session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        
+def add_contact(user_id: int, name: str, phone: str):
+    session = Session()
     try:
-       cursor.execute("SELECT * FROM refresh_tokens WHERE token = %s", (token,)) 
-       result = cursor.fetchone()  
+        contact = Contact(user_id=user_id, name=name, phone = phone )
+        session.add(contact)
+        session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        
+def get_contacts(user_id: int):
+    session = Session()
+    try: 
+       result = session.query(Contact).filter(Contact.user_id == user_id).all()
        if not result:
          return None
        else:
              return result
-    except Exception as e:
-     print(f"[ERROR] get_refresh_token() failed: {str(e)}")
-     raise
-    finally:
-        cursor.close() 
-        db.close()
-        
-def delete_refresh_tokens(user_id: int):
-    db = get_connection()
-    cursor = db.cursor()
-    try:
-        cursor.execute("DELETE FROM refresh_tokens WHERE user_id = %s", (user_id,))
-        db.commit()
-    except Exception as e:
-        print(f"[ERROR] delete_refresh_tokens() failed: {str(e)}")
+    except:
+        session.rollback()
         raise
     finally:
-        cursor.close()
-        db.close()
+        session.close()
+        
+def delete_contact(user_id: int, name: str):
+    session = Session()
+    try: 
+     session.query(Contact).filter(Contact.user_id == user_id, Contact.name == name).delete()
+     session.commit()
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
+        
+def find_contact(user_id: int, name: str):
+    session = Session()
+    try: 
+       result = session.query(Contact).filter(Contact.user_id == user_id,Contact.name == name).first()
+       if not result:
+         return None
+       else:
+         return result
+    except:
+        session.rollback()
+        raise
+    finally:
+        session.close()
