@@ -7,6 +7,7 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+
 def hash_password(password: str) -> str:
     # hash password before saving to database
  pwd_bytes = password.encode('utf-8')     # converting password to array of bytes
