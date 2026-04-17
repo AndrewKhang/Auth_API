@@ -9,9 +9,10 @@ load_dotenv()
 Base = declarative_base()
 
 # Engine reads credentials from .env
+_port = os.getenv('DB_PORT', '3306')
 DATABASE_URL = (
     f"mysql+mysqlconnector://{os.getenv('DB_USER')}:{os.getenv('DB_PASSWORD')}"
-    f"@{os.getenv('DB_HOST')}/{os.getenv('DB_NAME')}"
+    f"@{os.getenv('DB_HOST')}:{_port}/{os.getenv('DB_NAME')}"
 )
 engine = db.create_engine(DATABASE_URL)
 
