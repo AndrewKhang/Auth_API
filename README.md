@@ -60,6 +60,18 @@ uvicorn main:app --reload
 - `POST /contacts` → add contact (requires token)
 - `DELETE /contacts/{name}` → delete contact (requires token)
 
+## Testing
+```bash
+pytest test_main.py -v
+```
+
+Test cases:
+- Register new user
+- Login with valid credentials
+- Register duplicate username (expect 400)
+- Login with wrong password (expect 401)
+- Login with non-existent user (expect 404)
+
 ## Security
 - Passwords hashed with bcrypt
 - JWT access token (1 hour expiry)
