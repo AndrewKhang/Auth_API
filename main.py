@@ -28,6 +28,8 @@ class Contacts(BaseModel):
     
 @app.post("/register")
 def hashpassword(user:UserRegister):
+    if get_user(user.username):
+        raise HTTPException(status_code=400, detail="Username already exists!")
     hashed = hash_password(user.password)
     create_user(user.username, hashed)
     return {"message": "User registered successfully!"}
